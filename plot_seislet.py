@@ -42,28 +42,30 @@ d = d[:512,:64] #2^nじゃなきゃいけないっぽい
 #d = d['sigmoid'] 
 nx, nt = d.shape
 #print(nx,nt) #512 64
-dx, dt = 0.008, 0.004
-dx, dt = 1.0,1.0
+dx, dt = 8, 0.004
+#dx, dt = 1.0,1.0
 x, t = np.arange(nx) * dx, np.arange(nt) * dt
 
 # slope estimation
 slope = -pylops.utils.signalprocessing.slope_estimate(d.T, dt, dx, smooth=6)[0]
 #print("slope",slope.size) #32768
 #print("slope",slope.shape) #(64, 512)
-#print(np.amax(slope))#1360
-#print(np.amin(slope))#-5737
+print(np.amax(slope))#1360
+print(np.amin(slope))#-5737
 #print(np.mean(slope))#1.2652
 
-clip = 0.002
+#clip = 0.002
+clip = 0.5 #ここかえる！
 fig, axs = plt.subplots(1, 2, figsize=(10, 4))
 
 axs[0].imshow(d.T, cmap='gray', vmin=-clip, vmax=clip,
               extent = (x[0], x[-1], t[-1], t[0]))
 axs[0].set_title('Data')
 axs[0].axis('tight')
-im = axs[1].imshow(slope, cmap='jet', vmin=slope.min(), vmax=-slope.min(),
-                   extent = (x[0], x[-1], t[-1], t[0]))
 
+
+im = axs[1].imshow(slope, cmap='jet', vmin=slope.min(), vmax=-slope.min(), extent = (x[0], x[-1], t[-1], t[0]))
+#im = axs[1].imshow(slope, cmap='jet', vmin=-1.0, vmax=1.0, extent = (x[0], x[-1], t[-1], t[0]))
 
 axs[1].set_title('Slopes')
 axs[1].axis('tight')
