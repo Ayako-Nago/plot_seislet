@@ -30,32 +30,48 @@ inputfile='data/matlab.mat'
 #d = np.load(inputfile)
 data = scipy.io.loadmat(inputfile)
 d = data['ds'] #matに保存した変数の呼び出し
-d = d[:512,:64]
-print(d.shape)
+d = d[:512,:64] #2^nじゃなきゃいけないっぽい
+#print(d.shape)
+#print(d.size) #32768
+#print(d.shape) #(512, 64)
+#print(np.amax(d))#2.5810682328405736
+#print(np.amin(d))#-0.9633433504988566
+#print(np.mean(d))#0.0015775629218979185
+
+
 #d = d['sigmoid'] 
 nx, nt = d.shape
-#print(nx,nt) #719 100
-#dx, dt = 0.008, 0.004
-dx, dt = 1.0, 1.0
+#print(nx,nt) #512 64
+dx, dt = 0.008, 0.004
+dx, dt = 1.0,1.0
 x, t = np.arange(nx) * dx, np.arange(nt) * dt
 
 # slope estimation
 slope = -pylops.utils.signalprocessing.slope_estimate(d.T, dt, dx, smooth=6)[0]
-#print("slope",slope.size) #71900
-#print("slope",slope.shape) #(100, 719)
+#print("slope",slope.size) #32768
+#print("slope",slope.shape) #(64, 512)
+#print(np.amax(slope))#1360
+#print(np.amin(slope))#-5737
+#print(np.mean(slope))#1.2652
 
 clip = 0.002
 fig, axs = plt.subplots(1, 2, figsize=(10, 4))
+
 axs[0].imshow(d.T, cmap='gray', vmin=-clip, vmax=clip,
               extent = (x[0], x[-1], t[-1], t[0]))
 axs[0].set_title('Data')
 axs[0].axis('tight')
 im = axs[1].imshow(slope, cmap='jet', vmin=slope.min(), vmax=-slope.min(),
                    extent = (x[0], x[-1], t[-1], t[0]))
+
+
 axs[1].set_title('Slopes')
 axs[1].axis('tight')
 plt.colorbar(im, ax=axs[1])
+plt.show()
 
+
+""""
 ############################################
 # Next the Seislet transform is computed.
 
@@ -133,3 +149,4 @@ axs[2].axis('tight')
 # implemented in PyLops and passes the dot-test as shown below
 pylops.utils.dottest(Sop, nt*nx, nt*nx, verb=True)
 
+"""
