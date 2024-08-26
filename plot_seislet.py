@@ -42,20 +42,20 @@ d = d[:512,:64] #2^nじゃなきゃいけないっぽい
 #d = d['sigmoid'] 
 nx, nt = d.shape
 #print(nx,nt) #512 64
-dx, dt = 8, 0.004
-#dx, dt = 1.0,1.0
+#dx, dt = 1, 0.001
+dx, dt = 8, 0.004 #初期値
 x, t = np.arange(nx) * dx, np.arange(nt) * dt
 
 # slope estimation
 slope = -pylops.utils.signalprocessing.slope_estimate(d.T, dt, dx, smooth=6)[0]
 #print("slope",slope.size) #32768
 #print("slope",slope.shape) #(64, 512)
-print(np.amax(slope))#1360
-print(np.amin(slope))#-5737
+#print(np.amax(slope))#1360
+#print(np.amin(slope))#-5737
 #print(np.mean(slope))#1.2652
 
 #clip = 0.002
-clip = 0.5 #ここかえる！
+clip = 0.1 #ここかえる！
 fig, axs = plt.subplots(1, 2, figsize=(10, 4))
 
 axs[0].imshow(d.T, cmap='gray', vmin=-clip, vmax=clip,
@@ -70,20 +70,20 @@ im = axs[1].imshow(slope, cmap='jet', vmin=slope.min(), vmax=-slope.min(), exten
 axs[1].set_title('Slopes')
 axs[1].axis('tight')
 plt.colorbar(im, ax=axs[1])
-plt.show()
+#plt.show()
 
 
-""""
+
 ############################################
 # Next the Seislet transform is computed.
 
 Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
-print(Sop.shape) #(102400, 71900)
+#print(Sop.shape)
 
 seis = Sop * d.ravel()
 drec = Sop.inverse(seis)
-print(seis.shape)
-print(drec.shape)
+#print(seis.shape)
+#print(drec.shape)
 
 seis = seis.reshape(nx, nt)
 drec = drec.reshape(nx, nt)
@@ -99,6 +99,7 @@ for level in levels_cum:
 plt.title('Seislet transform')
 plt.colorbar()
 plt.axis('tight')
+
 
 
 ############################################
@@ -141,7 +142,7 @@ axs[2].imshow(d.T - drec1.T, cmap='gray', vmin=-clip, vmax=clip)
 axs[2].set_title('Rec. error from Seislet')
 axs[2].axis('tight')
 
-
+plt.show()
 ############################################
 # To conclude it is worth noting that the Seislet transform, opposite to the
 # Wavelet transform, is not an orthogonal transformation: in other words,
@@ -151,4 +152,3 @@ axs[2].axis('tight')
 # implemented in PyLops and passes the dot-test as shown below
 pylops.utils.dottest(Sop, nt*nx, nt*nx, verb=True)
 
-"""
