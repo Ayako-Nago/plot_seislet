@@ -81,7 +81,9 @@ Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
 #print(Sop.shape)
 
 seis = Sop * d.ravel()
-drec = Sop.inverse(seis)
+#drec = Sop.inverse(seis)
+#drec = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt),inv=False) * d.ravel()
+drec = Sop.adjoint() * d.ravel()
 #print(seis.shape)
 #print(drec.shape)
 
@@ -92,8 +94,20 @@ nlevels_max = int(np.log2(nx))
 levels_size = np.flip(np.array([2 ** i for i in range(nlevels_max)]))
 levels_cum = np.cumsum(levels_size)
 
+
+
+plt.figure(figsize=(14, 5))
+#plt.imshow(seis.T, cmap='gray', vmin=-clip, vmax=clip)
+plt.imshow(drec.T, cmap='gray', vmin=-clip, vmax=clip)
+for level in levels_cum:
+    plt.axvline(level-0.5, color='w')
+plt.title('Seislet transform')
+plt.colorbar()
+plt.axis('tight')
+
 plt.figure(figsize=(14, 5))
 plt.imshow(seis.T, cmap='gray', vmin=-clip, vmax=clip)
+#plt.imshow(drec.T, cmap='gray', vmin=-clip, vmax=clip)
 for level in levels_cum:
     plt.axvline(level-0.5, color='w')
 plt.title('Seislet transform')
