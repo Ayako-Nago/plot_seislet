@@ -4,6 +4,7 @@ from nt_toolbox.signal import *
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+import pylops
 import scipy
 import skimage.io
 import skimage.metrics
@@ -49,6 +50,17 @@ n = 64
 f0 = d
 
 
+nx, nt = d.shape
+#print(nx,nt) #512 64
+#dx, dt = 1, 0.001
+dx, dt = 8, 0.004 #初期値
+x, t = np.arange(nx) * dx, np.arange(nt) * dt
+
+# slope estimation
+slope = -pylops.utils.signalprocessing.slope_estimate(d.T, dt, dx, smooth=6)[0]
+Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
+
+
 sigma = 0.1
 f1 = f0 + sigma*np.random.randn(n,n)
 
@@ -63,7 +75,7 @@ r.sort()
 f1 = initial
 idx = r
 
-maxiter = 20000
+maxiter = 10000
 X = f1
 gamma_1 = 0.9
 gamma_2 = 1.1
@@ -81,16 +93,35 @@ Y = perform_wavortho_transf(X,Jmin,+1,h)
 
 
 for i in range(maxiter):  # In Python, loops are 0-indexed, so range(maxiter) is equivalent to 1:maxiter in MATLAB
+    if i % 1000 == 0:
+        print(i)
+
     X_bef = X.copy()  # Ensure you copy the matrix rather than reference it
-    
+
+    slope = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
+    Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
+
+    seis = Sop * X.ravel()
+    drec = Sop.inverse(seis)
+    drec = drec.reshape(nx, nt)
+
+
     # Step 1: Update X_tmp
-    X_tmp = X - gamma_1 * perform_wavortho_transf(Y, Jmin, -1, h)
+    #X_tmp = X - gamma_1 * perform_wavortho_transf(Y, Jmin, -1, h)
+    X_tmp = X - gamma_1 * drec
     
     # Step 2: Update X using MT, ProjL2ball, and M
     X = X_tmp + MT(ProjL2ball(M(X_tmp,idx), beta, epsilon) - M(X_tmp,idx), idx)
     
+    slope = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
+    Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
+
+    seis = Sop * X.ravel()
+    seis = seis.reshape(nx, nt)
+
+
     # Step 3: Update Y_tmp
-    Y_tmp = Y + gamma_2 * perform_wavortho_transf(2 * X - X_bef, Jmin, +1, h)
+    Y_tmp = Y + gamma_2 * seis
     
     # Step 4: Update Y using Prox_l1norm
     Y = Y_tmp - gamma_2 * Prox_l1norm(Y_tmp / gamma_2, 1 / gamma_2)
@@ -101,18 +132,18 @@ print(psnr(d, f1, 3))
 
 # Plot the results
 plt.subplot(1, 3, 1)
-#plt.imshow(d, cmap='seismic', clim=(-0.1, 0.1))
-plt.imshow(d, cmap='seismic')
+plt.imshow(d, cmap='seismic', clim=(-0.1, 0.1))
+#plt.imshow(d, cmap='seismic')
 plt.title('Original')
 
 plt.subplot(1, 3, 2)
-#plt.imshow(f1, cmap='seismic', clim=(-0.1, 0.1))
-plt.imshow(f1, cmap='seismic')
+plt.imshow(f1, cmap='seismic', clim=(-0.1, 0.1))
+#plt.imshow(f1, cmap='seismic')
 plt.title('Lack')
 
 plt.subplot(1, 3, 3)
-#plt.imshow(X, cmap='seismic', clim=(-0.1, 0.1))
-plt.imshow(X, cmap='seismic')
+plt.imshow(X, cmap='seismic', clim=(-0.1, 0.1))
+#plt.imshow(X, cmap='seismic')
 plt.title('Reconstructed')
 plt.colorbar()
 plt.show()
