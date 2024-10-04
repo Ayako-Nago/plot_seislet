@@ -44,8 +44,8 @@ inputfile='data/matlab.mat'
 
 data = scipy.io.loadmat(inputfile)
 d = data['ds'] #matに保存した変数の呼び出し
-d = d[:64,:64] 
-
+d = d[:512,:64]
+#d = d[:64,:64]
 n = 64
 f0 = d
 
@@ -56,26 +56,24 @@ nx, nt = d.shape
 dx, dt = 8, 0.004 #初期値
 x, t = np.arange(nx) * dx, np.arange(nt) * dt
 
-# slope estimation
-slope = -pylops.utils.signalprocessing.slope_estimate(d.T, dt, dx, smooth=6)[0]
-Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
 
 
 sigma = 0.1
-f1 = f0 + sigma*np.random.randn(n,n)
+f1 = f0 + sigma*np.random.randn(nx, nt)
+#print(f1.shape)
 
 sampling_rate = 0.8
-r = np.random.permutation(n)[:math.ceil(n*sampling_rate)]
-initial = np.zeros((n,n,))
-
-for c in range(math.ceil(n*sampling_rate)):
+r = np.random.permutation(nt)[:math.ceil(nt*sampling_rate)]
+initial = np.zeros((nx, nt,))
+#print(initial.shape)
+for c in range(math.ceil(nt*sampling_rate)):
     initial[:, r[c]] = f1[:, r[c]]
 
 r.sort()
 f1 = initial
 idx = r
 
-maxiter = 10000
+maxiter = 10
 X = f1
 gamma_1 = 0.9
 gamma_2 = 1.1
@@ -85,49 +83,49 @@ epsilon = sigma * math.sqrt(X.size)
 Jmin = 2
 T = 3.5*sigma
 
-#hについて調べる必要あり
-h = [0, .482962913145, .836516303738, .224143868042, -.129409522551]
-h = h/np.linalg.norm(h)
+slope = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
+Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
+Y = Sop * X.ravel()
+Y = Y.reshape(nx, nt)
+#Y = perform_wavortho_transf(X,Jmin,+1,h)
 
-Y = perform_wavortho_transf(X,Jmin,+1,h)
 
+for i in range(maxiter): 
+    print(i , " : ",psnr(d, X, 3))
 
-for i in range(maxiter):  # In Python, loops are 0-indexed, so range(maxiter) is equivalent to 1:maxiter in MATLAB
-    if i % 1000 == 0:
-        print(i)
 
     X_bef = X.copy()  # Ensure you copy the matrix rather than reference it
 
-    slope = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
+
+    # Step 1: Update X_tmp
+    #X_tmp = X - gamma_1 * perform_wavortho_transf(Y, Jmin, -1, h)
+    slope = - pylops.utils.signalprocessing.slope_estimate(Y.T, dt, dx, smooth=6)[0]
     Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
 
     seis = Sop * X.ravel()
     drec = Sop.inverse(seis)
     drec = drec.reshape(nx, nt)
 
-
-    # Step 1: Update X_tmp
-    #X_tmp = X - gamma_1 * perform_wavortho_transf(Y, Jmin, -1, h)
     X_tmp = X - gamma_1 * drec
     
     # Step 2: Update X using MT, ProjL2ball, and M
     X = X_tmp + MT(ProjL2ball(M(X_tmp,idx), beta, epsilon) - M(X_tmp,idx), idx)
-    
-    slope = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
+
+
+    # Step 3: Update Y_tmp
+    tmp = 2 * X - X_bef
+    slope = -pylops.utils.signalprocessing.slope_estimate(tmp.T, dt, dx, smooth=6)[0]
     Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
 
     seis = Sop * X.ravel()
     seis = seis.reshape(nx, nt)
-
-
-    # Step 3: Update Y_tmp
     Y_tmp = Y + gamma_2 * seis
     
     # Step 4: Update Y using Prox_l1norm
     Y = Y_tmp - gamma_2 * Prox_l1norm(Y_tmp / gamma_2, 1 / gamma_2)
 
 
-print(psnr(d, f1, 3))
+
 
 
 # Plot the results

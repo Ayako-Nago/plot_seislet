@@ -63,7 +63,7 @@ r.sort()
 f1 = initial
 idx = r
 
-maxiter = 20000
+maxiter = 3000
 X = f1
 gamma_1 = 0.9
 gamma_2 = 1.1
@@ -81,6 +81,8 @@ Y = perform_wavortho_transf(X,Jmin,+1,h)
 
 
 for i in range(maxiter):  # In Python, loops are 0-indexed, so range(maxiter) is equivalent to 1:maxiter in MATLAB
+    if i % 1000 == 0:
+        print(i , " : " , psnr(d, X, 3))
     X_bef = X.copy()  # Ensure you copy the matrix rather than reference it
     
     # Step 1: Update X_tmp
@@ -96,23 +98,23 @@ for i in range(maxiter):  # In Python, loops are 0-indexed, so range(maxiter) is
     Y = Y_tmp - gamma_2 * Prox_l1norm(Y_tmp / gamma_2, 1 / gamma_2)
 
 
-print(psnr(d, f1, 3))
+print("psnr : ",psnr(d, X, 3))
 
 
 # Plot the results
 plt.subplot(1, 3, 1)
-#plt.imshow(d, cmap='seismic', clim=(-0.1, 0.1))
-plt.imshow(d, cmap='seismic')
+plt.imshow(d, cmap='seismic', clim=(-0.1, 0.1))
+#plt.imshow(d, cmap='seismic')
 plt.title('Original')
 
 plt.subplot(1, 3, 2)
-#plt.imshow(f1, cmap='seismic', clim=(-0.1, 0.1))
-plt.imshow(f1, cmap='seismic')
+plt.imshow(f1, cmap='seismic', clim=(-0.1, 0.1))
+#plt.imshow(f1, cmap='seismic')
 plt.title('Lack')
 
 plt.subplot(1, 3, 3)
-#plt.imshow(X, cmap='seismic', clim=(-0.1, 0.1))
-plt.imshow(X, cmap='seismic')
+plt.imshow(X, cmap='seismic', clim=(-0.1, 0.1))
+#plt.imshow(X, cmap='seismic')
 plt.title('Reconstructed')
 plt.colorbar()
 plt.show()
