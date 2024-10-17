@@ -7,12 +7,13 @@ import matplotlib.pyplot as plt
 import scipy
 import skimage.io
 import skimage.metrics
+from numpy import linalg as LA
 
 def M(x, idx):
     return x[:, idx]
 
-def MT(x, idx):
-    y = np.zeros((x.shape[0], max(idx) + 1))  # Modify the shape based on the use case
+def MT(x, idx , nt):
+    y = np.zeros((x.shape[0], nt))  # Modify the shape based on the use case
     y[:, idx] = x
     return y
 
@@ -47,23 +48,23 @@ d = d[:64,:64]
 
 n = 64
 f0 = d
-
+nx, nt = d.shape
 
 sigma = 0.1
 f1 = f0 + sigma*np.random.randn(n,n)
 
 sampling_rate = 0.8
-r = np.random.permutation(n)[:math.ceil(n*sampling_rate)]
-initial = np.zeros((n,n,))
-
-for c in range(math.ceil(n*sampling_rate)):
+r = np.random.permutation(nt)[:math.ceil(nt*sampling_rate)]
+initial = np.zeros((nx, nt,))
+#print(initial.shape)
+for c in range(math.ceil(nt*sampling_rate)):
     initial[:, r[c]] = f1[:, r[c]]
 
 r.sort()
 f1 = initial
 idx = r
 
-maxiter = 3000
+maxiter = 500
 X = f1
 gamma_1 = 0.9
 gamma_2 = 1.1
@@ -95,8 +96,7 @@ levels_cum = np.cumsum(levels_size)
 
 
 for i in range(maxiter):  # In Python, loops are 0-indexed, so range(maxiter) is equivalent to 1:maxiter in MATLAB
-    if i % 100 == 0:
-        print(i , " : " , psnr(d, X, 3))
+
     X_bef = X.copy()  # Ensure you copy the matrix rather than reference it
     
     # Step 1: Update X_tmp
@@ -110,6 +110,12 @@ for i in range(maxiter):  # In Python, loops are 0-indexed, so range(maxiter) is
     
     # Step 4: Update Y using Prox_l1norm
     Y = Y_tmp - gamma_2 * Prox_l1norm(Y_tmp / gamma_2, 1 / gamma_2)
+
+    if i % 10 == 0:
+        print(i , " : " , psnr(d, X, 3))
+        print(" fro : ", LA.norm(X - X_bef,"fro") / LA.norm(X,"fro")) #e-5以下で収束
+        print(" Ax : ", LA.norm(perform_wavortho_transf(X, Jmin, -1, h),1))
+        print(" Mx-B : ", LA.norm(X_bef - f1,2))
 
 
 print("psnr : ",psnr(d, X, 3))

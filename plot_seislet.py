@@ -96,7 +96,7 @@ levels_size = np.flip(np.array([2 ** i for i in range(nlevels_max)]))
 levels_cum = np.cumsum(levels_size)
 
 
-
+"""
 plt.figure(figsize=(14, 5))
 #plt.imshow(seis.T, cmap='gray', vmin=-clip, vmax=clip)
 plt.imshow(drec.T, cmap='gray', vmin=-clip, vmax=clip)
@@ -105,6 +105,7 @@ for level in levels_cum:
 plt.title('Seislet transform')
 plt.colorbar()
 plt.axis('tight')
+"""
 
 plt.figure(figsize=(14, 5))
 plt.imshow(seis.T, cmap='gray', vmin=-clip, vmax=clip)
@@ -116,7 +117,7 @@ plt.colorbar()
 plt.axis('tight')
 
 
-
+"""
 ############################################
 # As a comparison we also compute the Seislet transform fixing slopes to zero.
 # This way we turn the Seislet tranform into a basic 1d Wavelet transform
@@ -133,7 +134,7 @@ for level in levels_cum:
 plt.title('Wavelet transform')
 plt.colorbar()
 plt.axis('tight')
-
+"""
 ############################################
 # Finally we evaluate the compression capabilities of the Seislet transform.
 # We zero-out all coefficients at the first two fine resolutions and keep those
