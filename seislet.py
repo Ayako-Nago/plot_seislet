@@ -8,12 +8,13 @@ import pylops
 import scipy
 import skimage.io
 import skimage.metrics
+from numpy import linalg as LA
 
 def M(x, idx):
     return x[:, idx]
 
-def MT(x, idx):
-    y = np.zeros((x.shape[0], max(idx) + 1))  # Modify the shape based on the use case
+def MT(x, idx , nt):
+    y = np.zeros((x.shape[0], nt))  # Modify the shape based on the use case
     y[:, idx] = x
     return y
 
@@ -73,43 +74,86 @@ r.sort()
 f1 = initial
 idx = r
 
-maxiter = 10
+maxiter = 100
 X = f1
 gamma_1 = 0.9
-gamma_2 = 1.1
+gamma_2 = 1.1 / 2
+
+
 beta = M(f1,idx)
 epsilon = sigma * math.sqrt(X.size)
 #options.ti = 1
 Jmin = 2
 T = 3.5*sigma
 
+
+
+
+
 slope = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
 Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
 Y = Sop * X.ravel()
 Y = Y.reshape(nx, nt)
+
+nlevels_max = int(np.log2(nx))
+levels_size = np.flip(np.array([2 ** i for i in range(nlevels_max)]))
+levels_cum = np.cumsum(levels_size)
+
+# plt.figure(figsize=(14, 5))
+# plt.imshow(Y, cmap='gray', vmin=-0.002, vmax=0.002)
+# for level in levels_cum:
+#     plt.axvline(level-0.5, color='w')
+# plt.title('Seislet transform')
+# plt.colorbar()
+# plt.axis('tight')
+# plt.show()
+
+
 #Y = perform_wavortho_transf(X,Jmin,+1,h)
+
+
+#print("idx : ",idx.shape)
+
+
+print("epsilon : ",epsilon)
 
 
 for i in range(maxiter): 
     print(i , " : ",psnr(d, X, 3))
-
+    #print(Y.shape)
 
     X_bef = X.copy()  # Ensure you copy the matrix rather than reference it
 
 
     # Step 1: Update X_tmp
     #X_tmp = X - gamma_1 * perform_wavortho_transf(Y, Jmin, -1, h)
+    #Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt), inv=False)
+    #Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt)).transpose()
+    #Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt)).inverse(slope)
+    #Sop_trans = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt)).transpose()
+    #Yのスロープ
     slope = - pylops.utils.signalprocessing.slope_estimate(Y.T, dt, dx, smooth=6)[0]
     Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
+    Sop_trans = Sop.transpose()
 
-    seis = Sop * X.ravel()
-    drec = Sop.inverse(seis)
-    drec = drec.reshape(nx, nt)
+    #print(np.amax(np.abs(slope)))
+    #print(Y.shape)
+    #print(Y.ravel())
 
-    X_tmp = X - gamma_1 * drec
+    # seis = Sop_trans * Y.ravel()
+    # seis = seis.reshape(nx,nt)
+    #print(type(seis))
+    #print(np.amax(np.abs(seis)))
+
+    #drec = seis.transpose()
+    #drec = drec.reshape(nx, nt)
+    #print(Sop_trans * Y.ravel())
+
+    X_tmp = X - gamma_1 * (Sop_trans * Y.ravel()).reshape(nx,nt)
+    #X_tmp = X - gamma_1 * seis
     
     # Step 2: Update X using MT, ProjL2ball, and M
-    X = X_tmp + MT(ProjL2ball(M(X_tmp,idx), beta, epsilon) - M(X_tmp,idx), idx)
+    X = X_tmp + MT(ProjL2ball(M(X_tmp,idx), beta, epsilon) - M(X_tmp,idx), idx , nt)
 
 
     # Step 3: Update Y_tmp
@@ -117,17 +161,26 @@ for i in range(maxiter):
     slope = -pylops.utils.signalprocessing.slope_estimate(tmp.T, dt, dx, smooth=6)[0]
     Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
 
-    seis = Sop * X.ravel()
+
+    seis = Sop * tmp.ravel()
     seis = seis.reshape(nx, nt)
     Y_tmp = Y + gamma_2 * seis
     
     # Step 4: Update Y using Prox_l1norm
     Y = Y_tmp - gamma_2 * Prox_l1norm(Y_tmp / gamma_2, 1 / gamma_2)
 
+    slope = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
+    Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
+
+    
+    print(" fro : ", LA.norm(X - X_bef,"fro") / LA.norm(X,"fro")) #e-5以下で収束
+    print(" Ax : ", LA.norm(Sop * X.ravel(),1))
+    print(" Mx-B : ", LA.norm(X_bef - f1,2))
 
 
 
 
+"""
 # Plot the results
 plt.subplot(1, 3, 1)
 plt.imshow(d, cmap='seismic', clim=(-0.1, 0.1))
@@ -146,5 +199,5 @@ plt.title('Reconstructed')
 plt.colorbar()
 plt.show()
 
-
+"""
 

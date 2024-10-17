@@ -30,8 +30,8 @@ inputfile='data/matlab.mat'
 #d = np.load(inputfile)
 data = scipy.io.loadmat(inputfile)
 d = data['ds'] #matに保存した変数の呼び出し
-d = d[:512,:64] #2^nじゃなきゃいけないっぽい
-#d = d[:64,:64] #2^nじゃなきゃいけないっぽい
+#d = d[:512,:64] #2^nじゃなきゃいけないっぽい
+d = d[:64,:64] #2^nじゃなきゃいけないっぽい
 #print(d.shape)
 #print(d.size) #32768
 #print(d.shape) #(512, 64)

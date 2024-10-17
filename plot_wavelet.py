@@ -80,8 +80,22 @@ h = h/np.linalg.norm(h)
 Y = perform_wavortho_transf(X,Jmin,+1,h)
 
 
+nlevels_max = int(np.log2(64))
+levels_size = np.flip(np.array([2 ** i for i in range(nlevels_max)]))
+levels_cum = np.cumsum(levels_size)
+
+# plt.figure(figsize=(14, 5))
+# plt.imshow(Y.T, cmap='gray', vmin=-0.002, vmax=0.002)
+# for level in levels_cum:
+#     plt.axvline(level-0.5, color='w')
+# plt.title('Seislet transform')
+# plt.colorbar()
+# plt.axis('tight')
+# plt.show()
+
+
 for i in range(maxiter):  # In Python, loops are 0-indexed, so range(maxiter) is equivalent to 1:maxiter in MATLAB
-    if i % 1000 == 0:
+    if i % 100 == 0:
         print(i , " : " , psnr(d, X, 3))
     X_bef = X.copy()  # Ensure you copy the matrix rather than reference it
     
