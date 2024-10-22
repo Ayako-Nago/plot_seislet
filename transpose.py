@@ -36,6 +36,7 @@ print("transpose()")
 
 v = v.reshape(nx,nt)
 w = w.reshape(nx,nt)
+
 slope = -pylops.utils.signalprocessing.slope_estimate(v.T, dt, dx, smooth=6)[0]
 Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
 slope = -pylops.utils.signalprocessing.slope_estimate(w.T, dt, dx, smooth=6)[0]
@@ -43,13 +44,17 @@ Sop_trans = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt)).transpos
 Sop_adj = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt)).adjoint()
 Sop_H = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt)).H
 
+Sop_trans = (Sop_trans * w.T.ravel()).reshape(nx,nt)
+Sop_trans = Sop_trans.T
+Sop_trans = Sop_trans.ravel()
+
 v = v.ravel()
 w = w.ravel()
 
 #print(Sop.shape)
 #print(Sop_trans.shape)
 print("〈Av,w〉",np.dot(Sop * v.ravel() , w))
-print("〈v,ATw〉",np.dot(v, Sop_trans * w))
+print("〈v,ATw〉",np.dot(v, Sop_trans))
 print("〈v,ATw〉",np.dot(v, Sop_adj * w))
 print("〈v,ATw〉",np.dot(v, Sop_H * w))
 #print(np.dot(Sop * v.ravel() , w) == np.dot(v, Sop_trans * w))
