@@ -8,6 +8,8 @@ import scipy
 import skimage.io
 import skimage.metrics
 from numpy import linalg as LA
+from nt_toolbox.perform_wavelet_transf import *
+# https://www.numerical-tours.com/matlab/denoisingwav_2_wavelet_2d/
 
 def M(x, idx):
     return x[:, idx]
@@ -78,8 +80,8 @@ T = 3.5*sigma
 h = [0, .482962913145, .836516303738, .224143868042, -.129409522551]
 h = h/np.linalg.norm(h)
 
-Y = perform_wavortho_transf(X,Jmin,+1,h)
-
+#Y = perform_wavortho_transf(X,Jmin,+1,h)
+Y = perform_wavelet_transf(X,Jmin,+1,ti=1)
 
 nlevels_max = int(np.log2(64))
 levels_size = np.flip(np.array([2 ** i for i in range(nlevels_max)]))
@@ -94,27 +96,29 @@ levels_cum = np.cumsum(levels_size)
 # plt.axis('tight')
 # plt.show()
 
-
+print("epsilon:",epsilon)
 for i in range(maxiter):  # In Python, loops are 0-indexed, so range(maxiter) is equivalent to 1:maxiter in MATLAB
 
     X_bef = X.copy()  # Ensure you copy the matrix rather than reference it
     
     # Step 1: Update X_tmp
-    X_tmp = X - gamma_1 * perform_wavortho_transf(Y, Jmin, -1, h)
-    
+    #X_tmp = X - gamma_1 * perform_wavortho_transf(Y, Jmin, -1, h)
+    X_tmp = X - gamma_1 * perform_wavelet_transf(Y, Jmin, -1,ti=1)
+
     # Step 2: Update X using MT, ProjL2ball, and M
-    X = X_tmp + MT(ProjL2ball(M(X_tmp,idx), beta, epsilon) - M(X_tmp,idx), idx)
+    X = X_tmp + MT(ProjL2ball(M(X_tmp,idx), beta, epsilon) - M(X_tmp,idx), idx, nt)
     
     # Step 3: Update Y_tmp
-    Y_tmp = Y + gamma_2 * perform_wavortho_transf(2 * X - X_bef, Jmin, +1, h)
-    
+    #Y_tmp = Y + gamma_2 * perform_wavortho_transf(2 * X - X_bef, Jmin, +1, h)
+    Y_tmp = Y + gamma_2 * perform_wavelet_transf(2 * X - X_bef, Jmin, +1,ti=1)
+
     # Step 4: Update Y using Prox_l1norm
     Y = Y_tmp - gamma_2 * Prox_l1norm(Y_tmp / gamma_2, 1 / gamma_2)
 
     if i % 10 == 0:
         print(i , " : " , psnr(d, X, 3))
         print(" fro : ", LA.norm(X - X_bef,"fro") / LA.norm(X,"fro")) #e-5以下で収束
-        print(" Ax : ", LA.norm(perform_wavortho_transf(X, Jmin, -1, h),1))
+        #print(" Ax : ", LA.norm(perform_wavelet_transf(X, Jmin, -1,ti=1),1))
         print(" Mx-B : ", LA.norm(X_bef - f1,2))
 
 

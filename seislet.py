@@ -64,7 +64,8 @@ sigma = 0.01
 f1 = f0 + sigma*np.random.randn(nx, nt)
 #print(f1.shape)
 
-sampling_rate = 0.8
+#sampling_rate = 0.8
+sampling_rate = 1
 r = np.random.permutation(nt)[:math.ceil(nt*sampling_rate)]
 initial = np.zeros((nx, nt,))
 #print(initial.shape)
@@ -74,10 +75,6 @@ for c in range(math.ceil(nt*sampling_rate)):
 r.sort()
 f1 = initial
 idx = r
-
-
-
-
 
 
 maxiter = 5
@@ -90,14 +87,7 @@ beta = M(f1,idx)
 epsilon = sigma * math.sqrt(X.size)
 #options.ti = 1
 Jmin = 2
-T = 3.5*sigma
-
-
-
-
-
-
-
+#T = 3.5*sigma
 
 
 slope = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
@@ -172,6 +162,8 @@ plt.axis('tight')
 
 print(LA.norm(seis,1))
 """
+
+print("epsilon : ",epsilon)
 plt.show()
 
 for i in range(maxiter): 
@@ -184,7 +176,8 @@ for i in range(maxiter):
 
     # Step 1: Update X_tmp
     #Yのスロープ
-    slope = -pylops.utils.signalprocessing.slope_estimate(Y.T, dt, dx, smooth=6)[0]
+    # slope = -pylops.utils.signalprocessing.slope_estimate(Y.T, dt, dx, smooth=6)[0]
+    slope = -pylops.utils.signalprocessing.slope_estimate(d.T, dt, dx, smooth=6)[0]
     Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
     Sop_trans = Sop.transpose()
 
@@ -206,9 +199,11 @@ for i in range(maxiter):
 
     # seis = Sop * tmp.ravel()
     # seis = seis.reshape(nx, nt)
-    slope_X = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
+    #slope_X = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
+    slope_X = -pylops.utils.signalprocessing.slope_estimate(d.T, dt, dx, smooth=6)[0]
     Sop = pylops.signalprocessing.Seislet(slope_X.T, sampling=(dx, dt))
-    slope_X_bef = -pylops.utils.signalprocessing.slope_estimate(X_bef.T, dt, dx, smooth=6)[0]
+    # slope_X_bef = -pylops.utils.signalprocessing.slope_estimate(X_bef.T, dt, dx, smooth=6)[0]
+    slope_X_bef = -pylops.utils.signalprocessing.slope_estimate(d.T, dt, dx, smooth=6)[0]
     Sop_bef = pylops.signalprocessing.Seislet(slope_X_bef.T, sampling=(dx, dt))
     seis = 2 * Sop*X.ravel() - Sop_bef*X_bef.ravel()
     seis = seis.reshape(nx, nt)
@@ -225,40 +220,43 @@ for i in range(maxiter):
 
     six = Y
 
-    slope = pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
+    #slope = -pylops.utils.signalprocessing.slope_estimate(X.T, dt, dx, smooth=6)[0]
+    slope = -pylops.utils.signalprocessing.slope_estimate(d.T, dt, dx, smooth=6)[0]
     Sop = pylops.signalprocessing.Seislet(slope.T, sampling=(dx, dt))
     
+    """
     plt.subplot(1,7,1)
+    plt.imshow(zero,cmap='seismic', clim=(-0.1, 0.1))
+    plt.axis('tight')
+    plt.title('X_bef')
+    plt.subplot(1,7,2)
     plt.imshow(one,cmap='seismic', clim=(-0.1, 0.1))
     plt.axis('tight')
     plt.title('(Sop_trans * Y.ravel()).reshape(nx,nt)')
-    plt.subplot(1,7,2)
+    plt.subplot(1,7,3)
     plt.imshow(two,cmap='seismic', clim=(-0.1, 0.1))
     plt.axis('tight')
     plt.title('X_tmp')
-    plt.subplot(1,7,3)
+    plt.subplot(1,7,4)
     plt.imshow(three,cmap='seismic', clim=(-0.1, 0.1))
     plt.axis('tight')
     plt.title('X')
     plt.colorbar()
-    plt.subplot(1,7,4)
+    plt.subplot(1,7,5)
     plt.imshow(four,cmap='seismic', clim=(-0.1, 0.1))
     plt.axis('tight')
     plt.title('gamma_2 * seis')
-    plt.subplot(1,7,5)
+    plt.subplot(1,7,6)
     plt.imshow(five,cmap='seismic', clim=(-0.1, 0.1))
     plt.axis('tight')
     plt.title('Y_tmp')
-    plt.subplot(1,7,6)
+    plt.subplot(1,7,7)
     plt.imshow(six,cmap='seismic', clim=(-0.1, 0.1))
     plt.axis('tight')
     plt.title('Y')
-    plt.subplot(1,7,7)
-    plt.imshow(zero,cmap='seismic', clim=(-0.1, 0.1))
-    plt.axis('tight')
-    plt.title('X_bef')
     plt.colorbar()
     plt.show()
+    """
     
 
     
