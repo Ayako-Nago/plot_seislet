@@ -33,9 +33,6 @@ for i in range(100):
     sum = v + y
 
 
-
-
-    
     # slope_x = -pylops.utils.signalprocessing.slope_estimate(v.T, dt, dx, smooth=6)[0]
     # Sop_x = pylops.signalprocessing.Seislet(slope_x.T, sampling=(dx, dt))
     RLop = pylops.signalprocessing.Radon2D(t, h, px, centeredh=True, kind="hyperbolic", interp=False, engine="numpy")
